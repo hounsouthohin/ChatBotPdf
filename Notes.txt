@@ -1,0 +1,9 @@
+On extrait les titres/sous‑titres pour :
+
+    Découper un PDF énorme en unités logiques.
+
+    Cibler la recherche de réponses.
+
+    Améliorer la précision du RAG (retrieval-augmented generation).
+
+    Associer textes et images à leurs sections.

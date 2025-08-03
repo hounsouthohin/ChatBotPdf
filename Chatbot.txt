@@ -1,0 +1,97 @@
+RAG : Retrieval Augmented Generation.
+
+LangSmith : a platform to execute LLM applications.Avoid complexity when using LangChain.
+
+
+#  Plan de conception d’un chatbot basé sur un PDF
+
+1. **Extraction du texte**
+
+   * Lire le contenu du PDF (PyPDF2, pdfplumber).
+
+2. **Prétraitement**
+
+   * Nettoyer le texte (espaces, sauts de ligne inutiles).
+   * Découper en *chunks* (petits morceaux) pour ne pas dépasser la limite des modèles.
+
+3. **Création des embeddings**
+
+   * Transformer chaque chunk en vecteur numérique (via OpenAI, HuggingFace, etc.).
+
+4. **Stockage vectoriel**
+
+   * Enregistrer les embeddings dans une base vectorielle (FAISS, Chroma, Weaviate, etc.).
+
+5. **Système de recherche (Retriever)**
+
+   * Lorsqu’un utilisateur pose une question, convertir la question en embedding.
+   * Chercher les chunks les plus pertinents dans la base vectorielle.
+
+6. **Construction du prompt final**
+
+   * Intégrer les chunks retrouvés + la question de l’utilisateur dans un prompt clair.
+
+7. **Génération de la réponse**
+
+   * Envoyer ce prompt au modèle (OpenAI GPT, LLaMA, etc.) pour obtenir une réponse basée uniquement sur le PDF.
+
+8. **Interface utilisateur (optionnel)**
+
+   * Créer une interface web (Gradio, Streamlit, ou une app web) pour dialoguer avec le chatbot.
+
+
+
+***************************************************FRAMEWORK INSTALLATION***************************************************
+
+
+# Manipulation PDF
+
+PyPDF2>=3.0.1 #splitting,merging, cropping and transforming pages of PDF files : documentation: https://pypdf2.readthedocs.io/en/stable/
+
+pdfplumber>=0.11.7 # Extracts detailed information about each text characte, rectangle, and line.Plus: Table extraction and visual debugging.
+
+# Core LangChain
+langchain-core 
+langgraph>0.2.27 # documentation : 
+	https://langchain-ai.github.io/langgraph/concepts/persistence/?_gl=1*	3zzv5r*_gcl_au*MTQ3NDI3MzI4OC4xNzUzOTc1MDMw*_ga*MTk2NjIxODUxNi4xNzUzOTc1MDMw*_ga_	47WX3HKKY2*czE3NTM5ODIwMDkkbzUkZzEkdDE3NTM5ODI0MjIkajUkbDAkaDA.
+
+# Embeddings et LLMs
+openai>=1.0.0
+tiktoken>=0.5.0 # couper intelligemment le text avant de l'envoyer au model enfin de reduire le cout.
+
+# Embeddings gratuits (HuggingFace)
+
+NB: Mais avant tout se créer un compte HuggingFace pour l'utilisation des models      	openSource.
+sentence-transformers this is the librairy
+sentence-transformers/all-MiniLM-L6-v2 this is the model.
+Link to the demo : https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+# Stockage vectoriel
+faiss-cpu>=1.11.0 #Recherche de similarité et du clustering vectoriel à grande échelle.
+chromadb>=1.0.15 base de donnée de vecteurs numériques.
+
+# Interface utilisateur
+gradio>=4.0.0
+
+# Outils utiles
+python-dotenv>=1.0.0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
