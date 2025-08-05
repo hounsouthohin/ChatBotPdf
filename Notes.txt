@@ -12,3 +12,8 @@ On extrait les titres/sous‑titres pour :
 
 
 NB : Prévoire la conception d'un model IA qui va extrere avec plus de précision les titres du PDF.Utiliser des models préentrainés : LayoutLM ou DistilBERT
+
+NB : Implémenter une recherche hybride.(embeddings + filtre).
+
+
+

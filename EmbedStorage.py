@@ -35,7 +35,7 @@ else:
     print(" La collection contient déjà des données. Aucun ajout nécessaire.")
 
 # Exemple de recherche
-query = "Neural networks basics"
+query = "Optimization"
 query_embedding = model.encode(query).tolist()
 results = collection.query(
     query_embeddings=[query_embedding],
@@ -44,4 +44,4 @@ results = collection.query(
 
 print("\nRésultats de recherche :")
 for doc, meta in zip(results["documents"][0], results["metadatas"][0]):
-    print(f"- {meta['title']} (p.{meta['page']}) -> {doc[:100]}...")
+    print(f"- {meta['title']} (p.{meta['page']}) -> {doc[:200]}...")

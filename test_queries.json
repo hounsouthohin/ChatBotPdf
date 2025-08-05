@@ -1,0 +1,14 @@
+[
+  {
+    "query": "What is backpropagation?",
+    "expected_keywords": ["gradient descent", "weights", "derivative"]
+  },
+  {
+    "query": "Explain convolution in neural networks",
+    "expected_keywords": ["filters", "feature map", "stride"]
+  },
+  {
+    "query": "What is the difference between supervised and unsupervised learning?",
+    "expected_keywords": ["labels", "clusters", "classification", "regression"]
+  }
+]

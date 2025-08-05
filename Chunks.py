@@ -2,8 +2,8 @@ import json
 import re
 
 # Paramètres du chunking
-CHUNK_SIZE = 200
-CHUNK_OVERLAP = 40
+CHUNK_SIZE = 120
+CHUNK_OVERLAP = 30
 
 def clean_text(text):
     """Nettoie le texte pour le rendre plus lisible et homogène."""
