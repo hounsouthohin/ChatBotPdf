@@ -61,7 +61,7 @@ tiktoken>=0.5.0 # couper intelligemment le text avant de l'envoyer au model enfi
 
 # Embeddings gratuits (HuggingFace)
 
-NB: Mais avant tout se créer un compte HuggingFace pour l'utilisation des models      	openSource.
+NB: Mais avant tout se créer un compte HuggingFace pour l'utilisation des models openSource.
 sentence-transformers this is the librairy
 sentence-transformers/all-MiniLM-L6-v2 this is the model.
 Link to the demo : https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
@@ -78,14 +78,41 @@ python-dotenv>=1.0.0
 
 
 
+****************************************************************** SCHEMA DE TRAITEMENT DU DOCUMENT PDF *********************************************************************************
+
+
+            PDF (texte + images) 
+    └── Extraction hybride
+           ├── Texte brut (par page)
+           │      + Section/Titre détecté
+           └── Images/Graphes liés aux pages
+    └── Structuration
+           ├── Associer chaque chunk à une section/titre/page
+           ├── Stocker les références aux images présentes dans la page
+    └── Embeddings (seulement sur texte)
+    └── Vector Store (chunks enrichis)
+    └── Chatbot
+           ├── Récupère chunks pertinents
+           ├── Donne la réponse avec contexte
+           └── Peut inclure : 
+                   - "Voir graphique page 45" 
+                   - et envoyer le fichier image associé
 
 
 
+Etapes que j'ai eu à faire : 
+	
+	Extraire les éléments essentiels(titres et sous-titres)
+	
+	Regrouper les textes en fonction de leur titre / sous-titre
+	
+	Procéder au Chunking(découpage en un nombre bien défini de tokens.) : Chunk Overlap : chaque chunk garde un morceau du contexte précédent.
 
+	Nettoyage des Chunks
 
+	Convertir les chunks en embeddings.
 
-
-
+	Stocker les embeddings dans une base de données vectorielles(ChramaDB ou FAISS)
 
 
 

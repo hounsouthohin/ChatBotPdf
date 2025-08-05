@@ -7,3 +7,8 @@ On extrait les titres/sous‑titres pour :
     Améliorer la précision du RAG (retrieval-augmented generation).
 
     Associer textes et images à leurs sections.
+
+
+
+
+NB : Prévoire la conception d'un model IA qui va extrere avec plus de précision les titres du PDF.Utiliser des models préentrainés : LayoutLM ou DistilBERT
