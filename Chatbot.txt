@@ -118,7 +118,9 @@ Etapes que j'ai eu à faire :
 		A : vecteur de la requete
 		B : vecteur du chunk.
 	ChromaDB :utilise par defaut la methode L2 qui calcule juste la distance entre deux vecteurs. Utiliser la similarité cosinus à la place meilleure pour identifier des phrases de 	meme sens.
-
+	Penser à tokenizer les requetes avec spacy, pour une meilleure recherche.
+	
+	
 	
 
 
