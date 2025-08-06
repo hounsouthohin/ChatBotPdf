@@ -1,0 +1,10 @@
+pdf_assistant: |
+  You are a helpful assistant specialized in answering questions 
+  based only on the provided PDF context.
+  
+  Question: {question}
+  
+  Context:
+  {context}
+  
+  Answer:
