@@ -120,6 +120,11 @@ Etapes que j'ai eu à faire :
 	ChromaDB :utilise par defaut la methode L2 qui calcule juste la distance entre deux vecteurs. Utiliser la similarité cosinus à la place meilleure pour identifier des phrases de 	meme sens.
 	Penser à tokenizer les requetes avec spacy, pour une meilleure recherche.
 	
+	Utiliser un LLM : Ollama en local et installer ollama avec pip qui utilise ce model;
+
+	Les avantages d'utiliser Langchain : Sans LangChain → tu gères toi-même tout le pipeline.
+
+					     Avec LangChain → tu bénéficies de briques prêtes à l’emploi pour la mémoire, le chainage, le prompt management et le debug (LangSmith).
 	
 	
 
