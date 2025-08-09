@@ -5,7 +5,7 @@ import chromadb
 import ollama
 
 from sentence_transformers import SentenceTransformer
-
+from langchain.chat_models import init_chat_model
 from langchain_core.messages import (
     HumanMessage,
     AIMessage,
@@ -35,7 +35,7 @@ collection = client.get_or_create_collection(
 with open("pdf_chunks.json", "r", encoding="utf-8") as f:
     chunks = json.load(f)
 
-# --- Réindexation si nécessaire
+# --- Encodage des chunks sinon déjà fait
 if collection.count() == 0:
     print("Réindexation des embeddings...")
     for ch in chunks:
@@ -57,50 +57,49 @@ else:
 
 
 # --- Fonction recherche hybride (cosine + mots clés)
-def hybrid_search(query, top_k=5, alpha=0.8):
+def hybrid_search(query, top_k=5, alpha=0.5):
     query_embedding = embedding_model.encode(query).tolist()
-    semantic_results = collection.query(
+    #Semantic_results : les resultats de la recherche sémantique
+    semantic_results = collection.query( 
         query_embeddings=[query_embedding],
         n_results=top_k,
         include=["documents", "metadatas", "distances"]
     )
+    # Les resultats de la première requete
     docs = semantic_results["documents"][0]
     metas = semantic_results["metadatas"][0]
     distances = semantic_results["distances"][0]
 
-    query_doc = nlp(query.lower())
+    query_doc = nlp(query.lower()) # Identification des tokens de la requete
+    #token.is_alpha : garde les tokens qui sont (A-Z ou a-z)
+    # token.is_stop : les mots vide : the, is...
+    # token.lemma_ : la forme de base du token : running - run...
     query_terms = {token.lemma_ for token in query_doc if token.is_alpha and not token.is_stop}
 
     ranked = []
+    # Parcours des resultats de la recherche sémantique
     for i, doc in enumerate(docs):
         semantic_score = 1 - distances[i]
         doc_tokens = nlp(doc.lower())
         doc_terms = {token.lemma_ for token in doc_tokens if token.is_alpha and not token.is_stop}
-        keyword_overlap = len(query_terms & doc_terms) / max(1, len(query_terms))
+        
+        keyword_overlap = len(query_terms & doc_terms) / max(1, len(query_terms)) #Intersection des mots identiques 
         score = alpha * semantic_score + (1 - alpha) * keyword_overlap
+        
         ranked.append((score, doc, metas[i]))
-    ranked.sort(key=lambda x: x[0], reverse=True)
+    ranked.sort(key=lambda x: x[0], reverse=True) # Du score le plus grand au plus petit.
     return ranked[:top_k]
 
 
 # --- Prompt template LangChain/LangGraph avec historique + contexte
-prompt_template = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "You are a helpful assistant who answers questions clearly in {language}. Use simple language.",
-        ),
-        MessagesPlaceholder(variable_name="messages"),
-        (
-            "system",
-            "Context:\n{context}\nUse this information to answer the user question accurately."
-        ),
-        (
-            "user",
-            "{question}"
-        )
-    ]
-)
+prompt_template = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        "You are a helpful assistant. You must answer the user's question using **only the information provided in the context below**.  If the answer is not found in the context, reply *I don't know* or *The context does not provide this information.*Context:{context}.You must strictly use the language: {language} that it provided"
+    ),
+    MessagesPlaceholder(variable_name="messages"),
+])
+
 
 
 # --- Typage du state pour LangGraph
@@ -108,15 +107,14 @@ class State(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     language: str
 
+# ---- Initialiser le modèle avec Ollama
+model = init_chat_model("llama3.2:latest", model_provider="ollama")
 
-def simple_token_counter(messages):
-    # compte le nombre total de mots dans tous les messages (approximation)
-    return sum(len(m.content.split()) for m in messages)
 
 trimmer = trim_messages(
     max_tokens=300,
     strategy="last",
-    token_counter=simple_token_counter,
+    token_counter=model,
     include_system=True,
     allow_partial=False,
     start_on="human",
@@ -126,60 +124,34 @@ trimmer = trim_messages(
 
 # --- Fonction principale du noeud LangGraph avec intégration complète
 def call_model(state: State):
-    # 1) Limiter l'historique à max tokens
+    # Limiter l'historique à max tokens
     trimmed_messages = trimmer.invoke(state["messages"])
 
-    # 2) Extraire la dernière question humaine dans l'historique réduit
-    query = next(
-        (m.content for m in reversed(trimmed_messages) if isinstance(m, HumanMessage)),
-        ""
-    )
-    language = state["language"]
-
-    # 3) Recherche hybride dans la base
-    results = hybrid_search(query, top_k=5, alpha=0.8)
+    #Récupérer le dernier message humain
+    user_query = ""
+    for msg in reversed(trimmed_messages):
+        if isinstance(msg, HumanMessage):
+            user_query = msg.content
+            break
+        
+    #Recherche hybride dans la base
+    results = hybrid_search(user_query, top_k=5, alpha=0.8)
     context = "\n---\n".join(doc for _, doc, _ in results)
-
-    # 4) Construire le prompt complet avec historique, contexte et question
-    prompt = prompt_template.invoke(
+    print("******* context ****** : ",context[:1000])
+    #Construire le prompt complet avec historique, contexte et question
+    final_prompt = prompt_template.invoke(
         {
             "messages": trimmed_messages,
             "context": context,
-            "question": query,
-            "language": language
+            "language": state["language"]
         }
     )
+    
+    print("final prompt : ",final_prompt)
+    response = model.invoke(final_prompt)
+    return {"messages": [response]}          
 
-    # 5) Préparer les messages pour Ollama (liste dict role/content)
-    # On convertit le prompt LangChain en messages Ollama
-    # Ici on découpe en "system" et "user" selon la structure de prompt_template
-
-    # prompt_template crée une liste de messages sous format ChatMessage (role, content).
-    # LangChain ne renvoie pas directement ce format, donc on va parser :
-    # prompt_template.invoke retourne un string complet, on préfère faire la conversion manuelle :
-
-    messages_ollama = []
-
-    # Ajout du premier message système
-    messages_ollama.append({"role": "system", "content": f"You are a helpful assistant speaking {language}."})
-
-    # Le message utilisateur contient le prompt complet (historique + contexte + question)
-    # ici on passe tout dans un seul message utilisateur pour simplifier
-    messages_ollama.append({"role": "user", "content": prompt})
-
-    # 6) Appel à Ollama
-    try:
-        response = ollama.chat(
-            model="llama3.2:latest",
-            messages=messages_ollama,
-        )
-        answer = response["message"]["content"].strip()
-    except Exception as e:
-        answer = f"Erreur lors de l'appel au LLM : {e}"
-
-    # 7) Retourner la réponse sous forme AIMessage pour LangGraph
-    return {"messages": [AIMessage(content=answer)]}
-
+  
 
 # --- Construire et compiler le workflow LangGraph
 workflow = StateGraph(state_schema=State)
@@ -188,24 +160,63 @@ workflow.add_node("model", call_model)
 app = workflow.compile(checkpointer=MemorySaver())
 
 
-# --- Fonction principale pour tester
 def main():
-    config = {"configurable": {"thread_id": "abc789"}}
-    query = "What is a Convolutional Neural Network?"
-    language = "English"
+    """
+    Fonction principale pour interagir avec l'utilisateur et générer une réponse
+    à partir du chatbot (Ollama + LangGraph).
+    """
 
-    input_messages = [HumanMessage(query)]
-    response = ""
+    # Message d'accueil
+    print("=== Chatbot IA - Mode Streaming Propre ===")
+
+    # 1. Récupérer la question de l'utilisateur
+    question = input("Entrez votre question : ")
+
+    # 2. Définir la langue de sortie (ici anglais par défaut)
+    language = "english"
+
+    # 3. Préparer les messages pour l'entrée du modèle
+    input_messages = [
+        ("user", question)  # tuple (rôle, contenu)
+    ]
+
+    # 4. Configuration du streaming
+    config = {"configurable": {"thread_id": "1"}}
+
+    # 5. Stocker la réponse complète au fur et à mesure
+    full_response = ""
+
+    # 6. Streaming des morceaux de réponse
+    print("\n[Streaming en cours...]\n")
     for chunk in app.stream(
         {"messages": input_messages, "language": language},
         config,
-        stream_mode="messages",
+        stream_mode="messages"
     ):
-        if isinstance(chunk, AIMessage):
-            response += chunk.content
+        message_chunk = chunk[0]  # AIMessageChunk
+        
+        content = None
+        if hasattr(message_chunk, "content"):
+            attr = getattr(message_chunk, "content")
+            content = attr() if callable(attr) else attr
+        elif hasattr(message_chunk, "text"):
+            attr = getattr(message_chunk, "text")
+            content = attr() if callable(attr) else attr
 
-    print("Réponse complète :", response)
+        if content:
+            full_response += content
+            print(content, end="", flush=True)
 
 
+
+
+       
+
+    # 7. Afficher la réponse complète à la fin (plus lisible)
+    print("\n\n=== Réponse complète ===")
+    print(full_response)
+
+
+# Lancer le programme
 if __name__ == "__main__":
     main()

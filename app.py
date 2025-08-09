@@ -27,7 +27,7 @@ os.environ["LANGSMITH_API_KEY"] = "lsv2_pt_9ee3c1e29c3a417dadd362455733d1b3_bacc
 # ---- Initialiser le modèle avec Ollama
 model = init_chat_model("llama3.2:latest", model_provider="ollama")
 
-
+        
 
 
 
