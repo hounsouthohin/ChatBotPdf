@@ -5,6 +5,8 @@ import json
 
 pdf_path = "deepLearning.pdf"
 
+
+#Utiliser un model layout pour détecter la structure du pdf : extraction text , image, tableau.
 def detect_titles_and_text(pdf_path, skip_first_pages=15):
     sections = []
     
@@ -86,18 +88,8 @@ def detect_titles_and_text(pdf_path, skip_first_pages=15):
     
     return sections
 
-# 🔎 Exécution
+# Exécution
 sections = detect_titles_and_text(pdf_path, skip_first_pages=15)
-
-# Affichage formaté
-for sec in sections:
-    print(f"- {sec['title']} (p.{sec['page']})")
-    for line in sec["content"]:
-        print(f"    {line}")
-    for sub in sec["subsections"]:
-        print(f"    - {sub['subtitle']} (p.{sub['page']})")
-        for line in sub["content"]:
-            print(f"        {line}")
 
 # Sauvegarde JSON
 with open("pdf_sections.json", "w", encoding="utf-8") as f:

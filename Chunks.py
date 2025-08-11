@@ -5,6 +5,8 @@ import re
 CHUNK_SIZE = 120
 CHUNK_OVERLAP = 30
 
+
+#Chercher une alternative encore meilleure que cette fonction ci-dessous.
 def clean_text(text):
     """Nettoie le texte pour le rendre plus lisible et homogène."""
     if not text:
